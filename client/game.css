@@ -1,0 +1,319 @@
+body {
+	background:gray;
+	-webkit-touch-callout: none;
+	-ms-user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: -moz-none;
+	user-select: none;
+	font-family: 'Droid Sans', sans-serif;
+}
+table {
+	color:white;
+}
+td {
+	padding:5px;
+}
+input {
+	width:150px;
+}
+.logoContainer {
+	background:rgb(66, 46, 25) url('images/noise.png');
+	padding:2%;
+	margin-bottom:2%;
+}
+.logo {
+	font-size:38px;
+	font-weight:700;
+	text-shadow:1px 1px 2px rgba(0, 0, 0, 0.5);
+	font-family: 'Yanone Kaffeesatz', 'impact', sans-serif;
+	color:rgb(156, 132, 80);
+	text-decoration:none;
+}
+.logo:hover {
+	color:rgb(168, 143, 88);
+}
+.logreg-message {
+	background:rgb(64, 73, 18) url('images/noise.png');
+	color:rgb(226, 222, 197);
+	padding:1%;
+	font-size:20px;
+	font-weight:800;
+	-webkit-transition-duration: 1s;
+	-moz-transition-duration: 1s;
+	transition-duration: 1s;
+}
+.error {
+	background:rgb(122, 15, 15) url('images/noise.png') !important;
+}
+.rederror:hover {
+	background:rgb(90, 11, 11) url('images/noise.png') !important;
+}
+.title {
+	font-size:22px;
+	font-weight:700;
+	text-shadow:1px 1px 2px rgba(255, 255, 255, 0.37);
+	font-family: 'Yanone Kaffeesatz', 'impact', sans-serif;
+	color:rgb(100, 84, 50);
+	margin-bottom:10px;
+}
+.divButton {
+	padding:5px;
+	padding-left:10%;
+	color:white;
+	font-size:16px;
+	font-weight:800;
+	margin-top:8px;
+	text-align:left;
+	background:rgb(66, 46, 25) url('images/noise.png');
+	cursor:pointer;
+}
+.divButton:hover {
+	background:rgb(37, 26, 14) url('images/noise.png');
+}
+.label {
+	display:inline-block;
+	min-width:120px;
+	color:rgb(235, 228, 221);
+}
+.logreg-input {
+	background:rgb(87, 64, 40) url('images/noise.png');
+	border-radius:0;
+	border:none;
+	padding:5px;
+	color:white;
+	font-size:16px;
+}
+.logreg-input:hover {
+	background:rgb(78, 58, 36) url('images/noise.png');
+}
+.logreg {
+	display:inline-block;
+	float:left;
+	text-align:left;
+	margin-top:20px;
+	margin-right:50px;
+}
+.logreg-container-container {
+	background:rgb(162, 137, 85);
+	margin:3%;
+	padding:10px;
+	font-size:16px;
+	text-align:center;
+}
+.logreg-container {
+	display:inline-block;
+}
+.overlay {
+	display:block;
+	position:absolute;
+	left:0;
+	right:0;
+	top:0;
+	bottom:0;
+	background:rgb(94, 75, 36) url('images/noise.png');
+	color:white;
+	z-index:99999;
+}
+.overlay-backgroundFix {
+	display:block;
+	background:rgb(94, 75, 36) url('images/noise.png');
+}
+.overlayError {
+	
+}
+.menu_retract {
+	float:left;
+	cursor:pointer;
+	background:rgb(172, 138, 87);
+	border-radius:1px;
+}
+.menu_retract:hover {
+	background:rgb(124, 99, 62);
+}
+.company {
+	color:white;
+	font-weight:800;
+	font-size:16px;
+	text-align:center;
+	padding:3px;
+	background: rgb(44, 31, 11);
+}
+.clear {
+	clear:both;
+}
+.trainAdd_list_item {
+	display:block;
+	cursor:pointer;
+	background:rgb(221, 146, 64);
+	color:rgb(82, 42, 11);
+	padding:3px;
+	margin:3px;
+	font-weight:800;
+}
+.trainAdd_list_item:hover {
+	background:rgb(196, 122, 42);
+}
+.add_new_route_button {
+	display:block;
+	cursor:pointer;
+	background:rgb(113, 185, 107);
+	color:rgb(82, 42, 11);
+	padding:3px;
+	margin:3px;
+	font-weight:800;
+}
+.add_new_route_button:hover {
+	background:rgb(99, 156, 94);
+}
+.trainWindow_route_list {
+	
+}
+.trainAdd_error {
+	display:block;
+	background:rgb(144, 22, 22);
+	color:white;
+	font-weight:800;
+	padding:8px;
+	margin:10px;
+	border:1px solid black;
+}
+.trainAdd_trainList {
+	display:none;
+}
+.window {
+	position:fixed;
+	left:75px;
+	top:75px;
+	min-width:10%;
+	max-width:60%;
+	z-index:600;
+	border:1px solid black;
+}
+.window-title {
+	color:white;
+	display:inline-block;
+	margin:2px;
+	padding:2px;
+	font-size:16px;
+	font-weight:800;
+}
+.window-topBar {
+	cursor:move;
+	background:rgb(160, 119, 46);
+}
+.window-content {
+	padding:5px;
+	background:rgba(65, 41, 11, 0.9);
+	color:white;
+}
+.window-close {
+	display:inline-block;
+	float:right;
+	cursor:pointer;
+	padding:4px;
+	font-size:17px;
+	margin-right:2px;
+	color:white;
+	background:rgb(211, 105, 21);
+}
+.window-close:hover {
+	background:rgb(165, 82, 16);
+}
+.bold {
+	font-weight:800;
+}
+.game_map_dot {
+	position:absolute;
+	background:red;
+	border-radius:50%;
+}
+.game_map_dot:hover {
+	background:rgb(23, 199, 199);
+}
+.game_map_name {
+	position:absolute;
+	display:inline;
+	text-align:center;
+	width:150px;
+	left:-75px;
+	top:8px;
+	color:white;
+	font-size:16px;
+	font-weight:800;
+}
+.game_map_image {
+	position:absolute;
+	left:-25px;
+	top:-50px;
+}
+.topbar {
+	position:fixed;
+	left:0;
+	right:0;
+	top:0;
+	background:rgba(97, 69, 28, 0.9) url('images/noise.png');
+	border-bottom: 1px solid rgb(61, 44, 19);
+	z-index:500;
+}
+.button {
+	display:inline-block;
+	background:rgb(146, 94, 28) url('images/noise.png');
+	margin:3px;
+	padding:3px;
+	border:1px solid black;
+	border-radius:2px;
+	cursor:pointer;
+}
+.button:hover {
+	background:rgb(170, 110, 33) url('images/noise.png');
+}
+.green {
+	background:rgb(80, 146, 28) url('images/noise.png');
+}
+.green:hover {
+	background:rgb(57, 104, 21) url('images/noise.png');
+}
+.red {
+	background:rgb(155, 36, 36) url('images/noise.png');
+}
+.red:hover {
+	background:rgb(111, 27, 27) url('images/noise.png');
+}
+.mirror {
+	-moz-transform: scaleX(-1);
+    -o-transform: scaleX(-1);
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    filter: FlipH;
+    -ms-filter: "FlipH";
+}
+.clickable {
+	cursor:pointer;
+}
+.active {
+	background:rgb(172, 133, 84) !important;
+}
+.topbar_action {
+	display:inline-block;
+	float:right;
+	color:white;
+	margin:17px;
+	font-size:22px;
+	font-weight:800;
+}
+.trainContainer {
+	position:fixed;
+	top:0;
+	bottom:0;
+	left:0;
+	right:0;
+}
+.fullscreen {
+	position:absolute;
+	left:0;
+	right:0;
+	top:0;
+	bottom:0;
+	width:100%;
+	height:100%;
+}
