@@ -775,16 +775,17 @@ SQUARIFIC.train.InputHandler = function InputHandler (world, container, out, lay
 			input.className = "input_label";
 			var button = document.createElement("div");
 			button.className = "button";
+			button.id = "newCompany_confirm_button";
 			button.style.display = "block";
 			button.style.marginTop = "15px";
 			button.style.textAlign = "center";
 			button.innerText = "Start new company";
 			button.addEventListener("click", function (event) {
-				world.company = new SQUARIFIC.train.Company({
-					name: document.getElementById("new_company_name").value
-				});
-				world.company.transaction("Initial funding from investors.", 500);
-				out.gui.closeWindow("New company");
+				if (!event.target.waitingForResponse) {
+					out.network.newCompany(document.getElementById("new_company_name").value);
+					event.target.classList.add("disabled");
+					event.target.waitingForResponse = true;
+				}
 			}, false);
 			cont.appendChild(label);
 			cont.appendChild(input);
@@ -1221,6 +1222,27 @@ SQUARIFIC.train.Network = function Network (world, trainInstance, settings, sock
 	this.onTrainUpdate = function (train) {
 		world.trains.updateTrain(train);
 	};
+	this.onNewCompany = function (data) {
+		if (!data.failed) {
+			trainInstance.company = new SQUARIFIC.train.Company(data);
+			out.gui.closeWindow("New company");
+		} else {
+			var button = document.getElementById("newCompany_confirm_button");
+			button.waitingForResponse = false;
+			button.classList.remove("disabled");
+			var error = document.createElement("div");
+			error.className = "trainAdd_error";
+			error.innerHTML = data.failed;
+			var errorContainer = document.getElementById("newCompany_error_container");
+			while (errorCotnainer.firstChild) {
+				errorContainer.removeChild(errorContainer.firstChild);
+			}
+			errorContainer.appendChild(error);
+		}
+	};
+	this.newCompany = function (data) {
+		socket.emit("newCompany", data);
+	};
 	this.pong = function (serverNow) {
 		var now = Date.now();
 		this.serverTimeDifference += (now - this.lastPing) / 2;
@@ -1229,5 +1251,6 @@ SQUARIFIC.train.Network = function Network (world, trainInstance, settings, sock
 	socket.on("pong", this.pong.bind(this));
 	socket.on("trainUpdate", this.onTrainUpdate.bind(this));
 	socket.on("getChunkData", this.onGetChunkData.bind(this));
+	socket.on("newCompany", this.onNewCompany.bind(this));
 	setTimeout(function () { socket.emit("ping"); this.lastPing = Date.now();}.bind(this), 0);
 };
