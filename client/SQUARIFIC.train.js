@@ -80,7 +80,7 @@ SQUARIFIC.network.socket.on("worldList", function (data) {
 });
 
 SQUARIFIC.network.socket.on("worldData", function (wd) {
-	SQUARIFIC.trainInstance = new SQUARIFIC.train.TrainInstance(wd.settings, wd.trains, wd.tracks, SQUARIFIC.network.socket);
+	SQUARIFIC.trainInstance = new SQUARIFIC.train.TrainInstance(wd.settings, wd.trains, wd.tracks, wd.company, SQUARIFIC.network.socket);
 	document.getElementById("overlay").style.display = "none";
 });
 
@@ -132,7 +132,7 @@ SQUARIFIC.logreg = function (form) {
 	}
 };
 
-SQUARIFIC.train.TrainInstance = function (settings, trains, tracks, socket, singleplayer) {
+SQUARIFIC.train.TrainInstance = function (settings, trains, tracks, company, socket, singleplayer) {
 	var container = document.getElementById("trainContainer");
 	this.layers = [];
 	this.layers.x = 0;
@@ -210,8 +210,14 @@ SQUARIFIC.train.Company = function (settings) {
 	this.name = settings.name || "Unnamed";
 	document.getElementById("company_name").innerText = this.name;
 	this.money = settings.money || 0;
-	this.transactions = [];
-	this.typeTransactions = [];
+	var money = document.getElementById("company_money_value");
+	money.innerText = parseInt(this.money) + "k";
+	if (this.money < 0) {
+		money.classList.add("negative");
+	} else {
+		money.classList.remove("negative");
+	}
+	this.transactions = settings.transactions || [];
 	this.transaction = function (reason, amount, type) {
 		type = type || "Other";
 		amount = Math.round(amount * 100) / 100;
@@ -1225,7 +1231,7 @@ SQUARIFIC.train.Network = function Network (world, trainInstance, settings, sock
 	this.onNewCompany = function (data) {
 		if (!data.failed) {
 			trainInstance.company = new SQUARIFIC.train.Company(data);
-			out.gui.closeWindow("New company");
+			trainInstance.gui.closeWindow("New company");
 		} else {
 			var button = document.getElementById("newCompany_confirm_button");
 			button.waitingForResponse = false;

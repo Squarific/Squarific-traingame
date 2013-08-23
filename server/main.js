@@ -69,20 +69,24 @@ SQUARIFIC.train.Server = function Server () {
 };
 
 SQUARIFIC.train.World = function World (server, settings, trains, tracks, client) {
+	this.database = {
+		companys: []
+	};
+
 	this.data = {};
 	this.data.id = "World-" + Date.now();
 	this.data.name = "TrainGameWorld";
 	this.data.companys = 0;
-	
+
 	this.sockets = [];
-	
+
 	settings = settings || {};
 	settings.map = settings.map || {};
 	settings.tracks = settings.tracks || {};
 	settings.cargos = settings.cargos || {};
 	settings.industrys = settings.industrys || {};
 	settings.trainController = settings.trainController || {};
-	
+
 	settings.map.seed = settings.map.seed || 0.2615;
 	settings.map.zoom = settings.map.zoom || 800;
 	settings.map.chunkSize = settings.map.chunkSize || 100;
@@ -115,6 +119,7 @@ SQUARIFIC.train.World = function World (server, settings, trains, tracks, client
 	}
 	
 	this.addSocket = function (socket) {
+		var company;
 		if (socket.userData.world) {
 			return;
 		}
@@ -128,7 +133,14 @@ SQUARIFIC.train.World = function World (server, settings, trains, tracks, client
 			}
 		});
 		socket.on("getChunkData", this.getChunkData.bind(this, socket));
-		socket.emit("worldData", {settings: settings, trains: this.trains.trains, tracks: this.tracks.tracks});
+		socket.on("newCompany", this.newCompany.bind(this, socket));
+		for (var key = 0; key < this.database.companys.length; key++) {
+			if (this.database.companys[key].owner === socket.userData.username) {
+				company = this.database.companys[key];
+				break;
+			}
+		}
+		socket.emit("worldData", {settings: settings, trains: this.trains.trains, tracks: this.tracks.tracks, company: company});
 	};	
 	
 	this.messages = new function (that) {
@@ -143,7 +155,7 @@ SQUARIFIC.train.World = function World (server, settings, trains, tracks, client
 	this.getChunkData = function (socket, chunk) {
 		var chunkData;
 		if (this.chunkData[chunk[0]] && this.chunkData[chunk[0]][chunk[1]]) {
-			chunkData = this.chunkData[chunk[0]][chunk[1]];
+			socket.emit("getChunkData", this.chunkData[chunk[0]][chunk[1]]);
 		} else {
 			chunkData = {
 				citys: [],
@@ -159,10 +171,33 @@ SQUARIFIC.train.World = function World (server, settings, trains, tracks, client
 					}
 				}
 			}
-			this.chunkData[chunk[0]] = {};
+			this.chunkData[chunk[0]] = this.chunkData[chunk[0]] || {};
 			this.chunkData[chunk[0]][chunk[1]] = chunkData;
+			socket.emit("getChunkData", chunkData);
 		}
-		socket.emit("getChunkData", chunkData);
+	};
+	this.newCompany = function (socket, data) {
+		for (var key = 0; key < this.database.companys.length; key++) {
+			if (this.database.companys[key].owner === socket.userData.username) {
+				socket.emit("newCompany", {
+					failed: "You already have a company."
+				});
+				return;
+			}
+		}
+		this.database.companys.push({
+			owner: socket.userData.username,
+			name: data,
+			money: 500,
+			transactions: [{
+				reason: "Money of the initial investors.",
+				amount: 500,
+				type: "Start money",
+				date: Date.now()
+			}]
+		});
+		this.data.companys = this.database.companys.length;
+		socket.emit("newCompany", this.database.companys[this.database.companys.length - 1]);
 	};
 };
 
