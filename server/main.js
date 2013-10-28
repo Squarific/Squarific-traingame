@@ -3,6 +3,11 @@ SQUARIFIC.framework = require("./SQUARIFIC.framework.js");
 SQUARIFIC.train = {};
 var CryptoJS = require("./crypto.js");
 
+console.log("======================================");
+console.log("= SQUARIFIC trainGame SERVER CONSOLE =");
+console.log("= Copyright SQUARIFIC.COM            =");
+console.log("======================================");
+
 SQUARIFIC.train.Server = function Server () {
 	var users = {};
 	
@@ -27,7 +32,7 @@ SQUARIFIC.train.Server = function Server () {
 				this.sendWorldList(socket);
 			} else {
 				socket.emit("logreg-error", "The username or password were wrong.");
-				console.log("Someone tried logging in: ", data);
+				console.log("Failed login attempt, tried logging in as " + data.username);
 			}
 		}.bind(this));
 		socket.on("register", function (data) {
@@ -35,7 +40,7 @@ SQUARIFIC.train.Server = function Server () {
 				socket.emit("logreg-error", "It seems like you are already logged in, try refreshing the page.");
 			} else if (!users[data.username]) {
 				users[data.username] = CryptoJS.SHA3(data.password).toString(CryptoJS.enc.Hex);
-				console.log(data.username + " registered with encrypted password: " + users[data.username]);
+				console.log("Registered new player: " + data.username);
 				socket.userData = {username: data.username};
 				this.sendWorldList(socket);
 			} else {
@@ -66,6 +71,12 @@ SQUARIFIC.train.Server = function Server () {
 			}
 		}.bind(this));
 	};
+};
+
+SQUARIFIC.train.registerSocketEvents = function (world, socket) {
+	socket.on("getChunkData", world.getChunkData.bind(world, socket));
+	socket.on("newCompany", world.newCompany.bind(world, socket));
+	socket.on("newTrack", world.newTrack.bind(world, socket));
 };
 
 SQUARIFIC.train.World = function World (server, settings, trains, tracks, client) {
@@ -132,8 +143,7 @@ SQUARIFIC.train.World = function World (server, settings, trains, tracks, client
 				key = this.sockets.indexOf(socket);
 			}
 		});
-		socket.on("getChunkData", this.getChunkData.bind(this, socket));
-		socket.on("newCompany", this.newCompany.bind(this, socket));
+		SQUARIFIC.train.registerSocketEvents(this, socket);
 		for (var key = 0; key < this.database.companys.length; key++) {
 			if (this.database.companys[key].owner === socket.userData.username) {
 				company = this.database.companys[key];
@@ -150,6 +160,19 @@ SQUARIFIC.train.World = function World (server, settings, trains, tracks, client
 			}
 		}.bind(that);
 	}(this);
+	
+	this.getCompanyFromOwner = function (owner) {
+		for (var key = 0; key < this.database.companys.length; key++) {
+			if (this.database.companys[key].owner === owner) {
+				return this.database.companys[key];
+			}
+		}
+		return false;
+	};
+
+	this.stationNameAt = function (x, y) {
+		return (this.citys.getCity(x, y).name || this.industrys.getIndustry(x, y).type || "Nothing") + " at (" + x + ", " + y + ")";
+	};
 	
 	this.chunkData = {};
 	this.getChunkData = function (socket, chunk) {
@@ -179,6 +202,7 @@ SQUARIFIC.train.World = function World (server, settings, trains, tracks, client
 	this.newCompany = function (socket, data) {
 		for (var key = 0; key < this.database.companys.length; key++) {
 			if (this.database.companys[key].owner === socket.userData.username) {
+				console.log(socket.userData.username + " tried creating a new company but already had one.");
 				socket.emit("newCompany", {
 					failed: "You already have a company."
 				});
@@ -196,8 +220,23 @@ SQUARIFIC.train.World = function World (server, settings, trains, tracks, client
 				date: Date.now()
 			}]
 		});
+		console.log(socket.userData.username + " created new company: '" + data + "'");
 		this.data.companys = this.database.companys.length;
 		socket.emit("newCompany", this.database.companys[this.database.companys.length - 1]);
+	};
+	
+	this.newTrack = function (socket, data) {
+		var company = this.getCompanyFromOwner(socket.userData.username);
+		var cost = Math.sqrt((data.p1.x - data.p2.x) * (data.p1.x - data.p2.x) + (data.p1.y - data.p2.y) * (data.p1.y - data.p2.y)) * this.tracks.costPerPixel;
+		if (company.money >= cost) {
+			console.log("New track bought by '", company.name, "', cost: ", cost);
+			var transaction = {reason: "Bought track between " + this.stationNameAt(data.p1.x, data.p1.y) + " and " + this.stationNameAt(data.p2.x, data.p2.y), amount: cost, type: "Tracklaying", data: Date.now()};
+			company.transactions.push(transaction);
+			company.money -= cost;
+			this.tracks.newTrack(data.p1, data.p2);
+			socket.emit("transaction", transaction);
+			this.messages.sendAll("newTrack", data);
+		}
 	};
 };
 
@@ -416,18 +455,18 @@ SQUARIFIC.train.Citys = function () {
 	};
 };
 
-SQUARIFIC.train.Tracks = function (worldInstance, settings) {
-	var tracks = [];
+SQUARIFIC.train.Tracks = function (worldInstance, settings, tracks) {
+	tracks = tracks || [];
 	this.tracks = tracks;
 	this.costPerPixel = settings.tracks.costPerPixel;
 	this.connectedPoints = [];
 	this.connectedCitys = 0;
 	this.newTrack = function newTrack (p1, p2) {
 		for (var k = 0; k < tracks.length; k++) {
-			if ((tracks[k][0] === p1.x || tracks[k][2] === p1.x) &&
-				(tracks[k][1] === p1.y || tracks[k][3] === p1.y) &&
-				(tracks[k][0] === p2.x || tracks[k][2] === p2.x) &&
-				(tracks[k][1] === p2.y || tracks[k][3] === p2.y)) {
+			if (((tracks[k][0] === p1.x && tracks[k][1] === p1.y) ||
+				(tracks[k][2] === p1.x && tracks[k][3] === p1.y)) &&
+				((tracks[k][0] === p2.x && tracks[k][1] === p2.y) ||
+				(tracks[k][2] === p2.x && tracks[k][3] === p2.y))) {
 				return false;
 			}
 		}
@@ -626,8 +665,8 @@ SQUARIFIC.train.Cargos = function (world, settings) {
 							i++
 						}
 						world.tracks.connectedPoints[a].cargos.push({
-							from: world.tracks.connectedPoints[a],
-							to: to,
+							from: {x: world.tracks.connectedPoints[a].x, y: world.tracks.connectedPoints[a].y},
+							to: {x: to.x, y: to.y},
 							type: "Passenger"
 						});
 						to = false;
@@ -662,8 +701,6 @@ SQUARIFIC.train.Cargos = function (world, settings) {
 				}
 				if (deboard) {
 					if (train.cargos[a].type === "Passenger") {
-						station.cargos.push(train.cargos[a]);
-					} else {
 						station.cargos.push(train.cargos[a]);
 					}
 					train.cargos.splice(a, 1);
@@ -744,8 +781,8 @@ SQUARIFIC.train.IndustryGeneration = function IndustryGeneration (worldInstance,
 							var to = worldInstance.tracks.closestStationAccepts(key, worldInstance.tracks.connectedPoints[a]);
 							if (to) {
 								worldInstance.tracks.connectedPoints[a].cargos.push({
-									from: worldInstance.tracks.connectedPoints[a],
-									to: to,
+									from: {x: worldInstance.tracks.connectedPoints[a].x, y: worldInstance.tracks.connectedPoints[a].y},
+									to: {x: to.x, y: to.y},
 									type: key
 								});
 								to.leftToAccept[key]--;

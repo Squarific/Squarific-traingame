@@ -159,7 +159,7 @@ SQUARIFIC.train.TrainInstance = function (settings, trains, tracks, company, soc
 	
 	//Painters
 	this.renderer = new SQUARIFIC.framework.Renderer(container, this.layers);
-	this.tracksPaint = new SQUARIFIC.train.TracksPaint(this.world.tracks.tracks);
+	this.tracksPaint = new SQUARIFIC.train.TracksPaint(this.world.tracks.tracks, this.world);
 	this.trainsPaint = new SQUARIFIC.train.TrainsPaint(this.world, this.inputHandler);
 	this.citysPaint = new SQUARIFIC.train.CitysPaint(this.world.citys, this.inputHandler);
 	this.industrysPaint = new SQUARIFIC.train.IndustrysPaint(this.world.industrys, this.inputHandler);
@@ -182,6 +182,10 @@ SQUARIFIC.train.TrainInstance = function (settings, trains, tracks, company, soc
 	
 	this.gui = new SQUARIFIC.framework.Gui(document.getElementById("guiContainer"));
 	this.network = new SQUARIFIC.train.Network(this.world, this, {}, socket);
+	
+	if (company) {
+		this.world.company = new SQUARIFIC.train.Company(company);
+	}
 };
 
 SQUARIFIC.train.mapRenderer = function mapRenderer (chunks, layers) {
@@ -219,6 +223,11 @@ SQUARIFIC.train.Company = function (settings) {
 	}
 	this.transactions = settings.transactions || [];
 	this.transaction = function (reason, amount, type) {
+		if (typeof reason === "object") {
+			this.transactions.push(reason);
+			this.amount += reason.amount;
+			return;
+		}
 		type = type || "Other";
 		amount = Math.round(amount * 100) / 100;
 		this.money += amount;
@@ -235,7 +244,19 @@ SQUARIFIC.train.Company = function (settings) {
 		} else {
 			money.classList.remove("negative");
 		}
-	}
+	};
+	this.update = function (data) {
+		this.name = data.name;
+		this.money = data.money;
+		this.transactions = data.transactions;
+		var money = document.getElementById("company_money_value");
+		money.innerText = parseInt(this.money) + "k";
+		if (this.money < 0) {
+			money.classList.add("negative");
+		} else {
+			money.classList.remove("negative");
+		}
+	};
 };
 
 SQUARIFIC.train.IndustrysPaint = function (industrys, handler) {
@@ -429,9 +450,9 @@ SQUARIFIC.train.TrainsPaint = function (world, handler) {
 	};
 };
 
-SQUARIFIC.train.TracksPaint = function (tracks) {
+SQUARIFIC.train.TracksPaint = function (tracks, world) {
 	this.paint = function trackPaint (ctx, container, x, y) {
-		if (x !== this.lastX || y !== this.lastY || this.resized || this.newTracked) {
+		if (x !== this.lastX || y !== this.lastY || this.resized || world.tracks.newTracked) {
 			for (var k = 0; k < tracks.length; k++) {
 				ctx.beginPath();
 				ctx.moveTo(tracks[k][0] - x, tracks[k][1] - y);
@@ -442,7 +463,7 @@ SQUARIFIC.train.TracksPaint = function (tracks) {
 			this.lastX = x;
 			this.lastY = y;
 			this.resized = false;
-			this.newTracked = false;
+			world.tracks.newTracked = false;
 		}
 	};
 };
@@ -951,10 +972,8 @@ SQUARIFIC.train.InputHandler = function InputHandler (world, container, out, lay
 					out.gui.messages.add("Your company doesn't have " + cost + "k to buy this track.", 3000);
 					return;
 				}
-				if ((this.track.x !== target.x || this.track.y !== target.y) && tracks.newTrack(this.track, target)) {
-					var first = this.track.name || this.track.type + " at (" + this.track.x + ", " + this.track.y + ")",
-						second = target.name || target.type + " at (" + target.x + ", " + target.y + ")";
-					world.company.transaction("Buying track between " + first + " and " + second, -cost, "Buying track");
+				if ((this.track.x !== target.x || this.track.y !== target.y)) {
+					out.network.newTrack({x: this.track.x, y: this.track.y}, {x: target.x, y: target.y});
 				}
 				this.trackTarget.style.background = "";
 				delete this.track;
@@ -1216,6 +1235,9 @@ SQUARIFIC.train.Network = function Network (world, trainInstance, settings, sock
 	this.getChunkData = function (chunk) {
 		socket.emit("getChunkData", chunk);
 	};
+	this.newTrack = function (p1, p2) {
+		socket.emit("newTrack", {p1: p1, p2: p2});
+	};
 	this.onGetChunkData = function (chunkData) {
 		var key;
 		for (key = 0; key < chunkData.citys.length; key++) {
@@ -1230,8 +1252,12 @@ SQUARIFIC.train.Network = function Network (world, trainInstance, settings, sock
 	};
 	this.onNewCompany = function (data) {
 		if (!data.failed) {
-			trainInstance.company = new SQUARIFIC.train.Company(data);
-			trainInstance.gui.closeWindow("New company");
+			if (!trainInstance.company) {
+				trainInstance.world.company = new SQUARIFIC.train.Company(data);
+				trainInstance.gui.closeWindow("New company");
+			} else {
+				trainInstance.company.update(data);
+			}
 		} else {
 			var button = document.getElementById("newCompany_confirm_button");
 			button.waitingForResponse = false;
@@ -1246,6 +1272,13 @@ SQUARIFIC.train.Network = function Network (world, trainInstance, settings, sock
 			errorContainer.appendChild(error);
 		}
 	};
+	this.onNewTrack = function (track) {
+		console.log(track);
+		world.tracks.newTrack(track.p1, track.p2);
+	};
+	this.onTransaction = function (transaction) {
+		trainInstance.world.company.transaction(transaction);
+	};
 	this.newCompany = function (data) {
 		socket.emit("newCompany", data);
 	};
@@ -1258,5 +1291,7 @@ SQUARIFIC.train.Network = function Network (world, trainInstance, settings, sock
 	socket.on("trainUpdate", this.onTrainUpdate.bind(this));
 	socket.on("getChunkData", this.onGetChunkData.bind(this));
 	socket.on("newCompany", this.onNewCompany.bind(this));
+	socket.on("newTrack", this.onNewTrack.bind(this));
+	socket.on("transaction", this.onTransaction.bind(this));
 	setTimeout(function () { socket.emit("ping"); this.lastPing = Date.now();}.bind(this), 0);
 };

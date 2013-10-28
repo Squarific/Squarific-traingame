@@ -302,18 +302,18 @@ SQUARIFIC.train.Citys = function () {
 	};
 };
 
-SQUARIFIC.train.Tracks = function (worldInstance, settings) {
-	var tracks = [];
+SQUARIFIC.train.Tracks = function (worldInstance, settings, tracks) {
+	tracks = tracks || [];
 	this.tracks = tracks;
 	this.costPerPixel = settings.tracks.costPerPixel;
 	this.connectedPoints = [];
 	this.connectedCitys = 0;
 	this.newTrack = function newTrack (p1, p2) {
 		for (var k = 0; k < tracks.length; k++) {
-			if ((tracks[k][0] === p1.x || tracks[k][2] === p1.x) &&
-				(tracks[k][1] === p1.y || tracks[k][3] === p1.y) &&
-				(tracks[k][0] === p2.x || tracks[k][2] === p2.x) &&
-				(tracks[k][1] === p2.y || tracks[k][3] === p2.y)) {
+			if (((tracks[k][0] === p1.x && tracks[k][1] === p1.y) ||
+				(tracks[k][2] === p1.x && tracks[k][3] === p1.y)) &&
+				((tracks[k][0] === p2.x && tracks[k][1] === p2.y) ||
+				(tracks[k][2] === p2.x && tracks[k][3] === p2.y))) {
 				return false;
 			}
 		}
